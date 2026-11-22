@@ -24,6 +24,7 @@
       overflow: hidden;
       background: #fff;
       overscroll-behavior: none;
+      touch-action: none;
     }
     canvas {
       display: block;
@@ -117,8 +118,24 @@
       if (map[e.code]) keys[map[e.code]] = false;
     });
 
-    // ---------- ورودی موس و لمس ----------
-    const pointer = {
+    // ---------- ورودی لمسی (جوی‌استیک شناور) و موس ----------
+    const JOY_MAX_R = 54;    // شعاع دایره جوی‌استیک
+    const JOY_DEADZONE = 7;  // ناحیه خنثی در مرکز برای جلوگیری از لرزش
+    const JOY_LEASH_R = 64;  // فاصله‌ای که بعد از آن مرکز جوی‌استیک دنبال انگشت می‌آید
+
+    const joy = {
+      active: false,
+      id: null,
+      baseX: 0, baseY: 0,
+      knobX: 0, knobY: 0,
+      startX: 0, startY: 0,
+      startTime: 0,
+      moved: false,
+      alpha: 0,
+      running: false
+    };
+
+    const mousePtr = {
       down: false,
       id: null,
       sx: 0, sy: 0,
@@ -126,57 +143,121 @@
       startTime: 0,
       dragged: false
     };
-    let tapTarget = null; // { wx, wy, run }
-    const ripples = [];   // موج‌های ظریف محل لمس/کلیک
 
-    function getRunThreshold() {
+    let tapTarget = null; // { wx, wy, run }
+    const ripples = [];   // موج دایره‌ای هنگام کلیک یا تپ کوتاه
+
+    function getMouseRunThreshold() {
       return Math.max(95, Math.min(165, Math.min(W, H) * 0.28));
     }
 
+    function addRipple(wx, wy) {
+      ripples.push({ wx, wy, life: 1 });
+      if (ripples.length > 6) ripples.shift();
+    }
+
     canvas.addEventListener('contextmenu', e => e.preventDefault());
+    canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
     canvas.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (pointer.down) return;
       e.preventDefault();
-      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
 
-      pointer.down = true;
-      pointer.id = e.pointerId;
-      pointer.sx = e.clientX;
-      pointer.sy = e.clientY;
-      pointer.startX = e.clientX;
-      pointer.startY = e.clientY;
-      pointer.startTime = performance.now();
-      pointer.dragged = false;
-      tapTarget = null;
+      if (e.pointerType === 'mouse') {
+        if (e.button !== 0 || mousePtr.down) return;
+        try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
 
-      const wPos = screenToWorld(e.clientX, e.clientY);
-      ripples.push({ wx: wPos.wx, wy: wPos.wy, life: 1 });
-      if (ripples.length > 6) ripples.shift();
+        mousePtr.down = true;
+        mousePtr.id = e.pointerId;
+        mousePtr.sx = mousePtr.startX = e.clientX;
+        mousePtr.sy = mousePtr.startY = e.clientY;
+        mousePtr.startTime = performance.now();
+        mousePtr.dragged = false;
+        tapTarget = null;
+
+        const wPos = screenToWorld(e.clientX, e.clientY);
+        addRipple(wPos.wx, wPos.wy);
+      } else {
+        // لمس گوشی یا قلم -> جوی‌استیک شناور
+        if (joy.active) return;
+        try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+
+        joy.active = true;
+        joy.id = e.pointerId;
+        joy.baseX = joy.knobX = joy.startX = e.clientX;
+        joy.baseY = joy.knobY = joy.startY = e.clientY;
+        joy.startTime = performance.now();
+        joy.moved = false;
+        joy.running = false;
+        tapTarget = null;
+      }
     });
 
     canvas.addEventListener('pointermove', e => {
-      if (!pointer.down || e.pointerId !== pointer.id) return;
-      pointer.sx = e.clientX;
-      pointer.sy = e.clientY;
-      if (!pointer.dragged && Math.hypot(pointer.sx - pointer.startX, pointer.sy - pointer.startY) > 12) {
-        pointer.dragged = true;
+      if (mousePtr.down && e.pointerId === mousePtr.id) {
+        mousePtr.sx = e.clientX;
+        mousePtr.sy = e.clientY;
+        if (!mousePtr.dragged && Math.hypot(mousePtr.sx - mousePtr.startX, mousePtr.sy - mousePtr.startY) > 12) {
+          mousePtr.dragged = true;
+        }
+        return;
+      }
+
+      if (joy.active && e.pointerId === joy.id) {
+        if (!joy.moved && Math.hypot(e.clientX - joy.startX, e.clientY - joy.startY) > 10) {
+          joy.moved = true;
+        }
+
+        const ox = e.clientX - joy.baseX;
+        const oy = e.clientY - joy.baseY;
+        const dist = Math.hypot(ox, oy);
+
+        // اگر انگشت از شعاع مجاز دورتر رفت، پایه جوی‌استیک نرم دنبالش می‌آید
+        if (dist > JOY_LEASH_R) {
+          const excess = dist - JOY_LEASH_R;
+          joy.baseX = Math.max(24, Math.min(W - 24, joy.baseX + (ox / dist) * excess));
+          joy.baseY = Math.max(24, Math.min(H - 24, joy.baseY + (oy / dist) * excess));
+        }
+
+        const nx = e.clientX - joy.baseX;
+        const ny = e.clientY - joy.baseY;
+        const nd = Math.hypot(nx, ny);
+        const clamped = Math.min(nd, JOY_MAX_R);
+        joy.knobX = joy.baseX + (nd > 0 ? (nx / nd) * clamped : 0);
+        joy.knobY = joy.baseY + (nd > 0 ? (ny / nd) * clamped : 0);
       }
     });
 
     function endPointer(e, allowTap) {
-      if (!pointer.down || e.pointerId !== pointer.id) return;
-      if (allowTap && !pointer.dragged && (performance.now() - pointer.startTime) < 280) {
-        const wPos = screenToWorld(pointer.sx, pointer.sy);
-        const pScr = worldToIso(player.x, player.y);
-        const sDist = Math.hypot(pointer.sx - pScr.screenX, pointer.sy - pScr.screenY);
-        if (sDist > 12) {
-          tapTarget = { wx: wPos.wx, wy: wPos.wy, run: sDist >= getRunThreshold() };
+      if (mousePtr.down && e.pointerId === mousePtr.id) {
+        if (allowTap && !mousePtr.dragged && (performance.now() - mousePtr.startTime) < 280) {
+          const wPos = screenToWorld(mousePtr.sx, mousePtr.sy);
+          const pScr = worldToIso(player.x, player.y);
+          const sDist = Math.hypot(mousePtr.sx - pScr.screenX, mousePtr.sy - pScr.screenY);
+          if (sDist > 12) {
+            tapTarget = { wx: wPos.wx, wy: wPos.wy, run: sDist >= getMouseRunThreshold() };
+          }
         }
+        mousePtr.down = false;
+        mousePtr.id = null;
+        return;
       }
-      pointer.down = false;
-      pointer.id = null;
+
+      if (joy.active && e.pointerId === joy.id) {
+        // اگر فقط یک تپ سریع و کوتاه روی زمین بود، کاراکتر به آن نقطه می‌رود
+        if (allowTap && !joy.moved && (performance.now() - joy.startTime) < 240) {
+          const wPos = screenToWorld(e.clientX, e.clientY);
+          const pScr = worldToIso(player.x, player.y);
+          const sDist = Math.hypot(e.clientX - pScr.screenX, e.clientY - pScr.screenY);
+          addRipple(wPos.wx, wPos.wy);
+          if (sDist > 16) {
+            tapTarget = { wx: wPos.wx, wy: wPos.wy, run: sDist >= getMouseRunThreshold() };
+          }
+        }
+        joy.active = false;
+        joy.id = null;
+        joy.running = false;
+      }
     }
 
     canvas.addEventListener('pointerup', e => endPointer(e, true));
@@ -184,8 +265,8 @@
 
     window.addEventListener('blur', () => {
       for (const k in keys) keys[k] = false;
-      pointer.down = false;
-      pointer.id = null;
+      joy.active = false; joy.id = null; joy.running = false;
+      mousePtr.down = false; mousePtr.id = null;
       tapTarget = null;
     });
 
@@ -316,15 +397,36 @@
         tapTarget = null;
         isRunning = keys.run;
         desiredSpeed = isRunning ? RUN : WALK;
-      } else if (pointer.down) {
+      } else if (joy.active) {
+        const jx = joy.knobX - joy.baseX;
+        const jy = joy.knobY - joy.baseY;
+        const jd = Math.hypot(jx, jy);
+
+        if (jd > JOY_DEADZONE) {
+          const ratio = Math.min(1, (jd - JOY_DEADZONE) / (JOY_MAX_R - JOY_DEADZONE));
+          // تبدیل دقیق جهت صفحه‌نمایش (بالا/پایین/چپ/راست و زوایای میانی) به مختصات ایزومتریک
+          dx = jx + 2 * jy;
+          dy = 2 * jy - jx;
+
+          if (ratio > 0.76) {
+            const runT = (ratio - 0.76) / 0.24;
+            desiredSpeed = WALK + (RUN - WALK) * runT;
+            isRunning = runT > 0.2;
+          } else {
+            const walkT = ratio / 0.76;
+            desiredSpeed = WALK * (0.3 + 0.7 * walkT);
+          }
+        }
+        joy.running = isRunning;
+      } else if (mousePtr.down) {
         const pScr = worldToIso(player.x, player.y);
-        const sDist = Math.hypot(pointer.sx - pScr.screenX, pointer.sy - pScr.screenY);
+        const sDist = Math.hypot(mousePtr.sx - pScr.screenX, mousePtr.sy - pScr.screenY);
         if (sDist > 14) {
-          const target = screenToWorld(pointer.sx, pointer.sy);
+          const target = screenToWorld(mousePtr.sx, mousePtr.sy);
           dx = target.wx - player.x;
           dy = target.wy - player.y;
 
-          const runStart = getRunThreshold();
+          const runStart = getMouseRunThreshold();
           const runFull = runStart + 70;
           if (sDist >= runStart) {
             const t = Math.min(1, (sDist - runStart) / (runFull - runStart));
@@ -354,7 +456,7 @@
       const ty = len ? (dy / len) * desiredSpeed : 0;
 
       // شتاب و ترمز نرم
-      const k = 1 - Math.exp(-dt * (len ? 9 : 12));
+      const k = 1 - Math.exp(-dt * (len ? 10 : 12));
       player.vx += (tx - player.vx) * k;
       player.vy += (ty - player.vy) * k;
       if (!len && Math.hypot(player.vx, player.vy) < 2) { player.vx = 0; player.vy = 0; }
@@ -368,7 +470,7 @@
       const sxv = player.vx - player.vy;
       if (Math.abs(sxv) > 8) player.face = sxv > 0 ? 1 : -1;
 
-      // با هر قدم کمی گرد و خاک هنگام دویدن
+      // گرد و خاک هنگام دویدن
       const side = Math.floor(player.phase / Math.PI);
       if (side !== stepSide && isRunning && sp > 100) {
         const p = worldToIso(player.x, player.y);
@@ -376,7 +478,16 @@
       }
       stepSide = side;
 
-      // دوربین دنبال می‌کند
+      // انیمیشن ظاهر و محو شدن جوی‌استیک
+      const targetJoyAlpha = joy.active ? 1 : 0;
+      joy.alpha += (targetJoyAlpha - joy.alpha) * Math.min(1, dt * 15);
+      if (!joy.active && joy.alpha > 0.01) {
+        const ret = Math.min(1, dt * 18);
+        joy.knobX += (joy.baseX - joy.knobX) * ret;
+        joy.knobY += (joy.baseY - joy.knobY) * ret;
+      }
+
+      // دوربین نرم
       const c = 1 - Math.exp(-dt * 4.5);
       cam.x += (player.x - cam.x) * c;
       cam.y += (player.y - cam.y) * c;
@@ -417,7 +528,6 @@
     function drawPointerEffects(time) {
       ctx.strokeStyle = '#151515';
 
-      // موج لحظه‌ای محل لمس یا کلیک
       for (const r of ripples) {
         const p = worldToIso(r.wx, r.wy);
         const rx = 5 + (1 - r.life) * 22;
@@ -428,7 +538,6 @@
         ctx.stroke();
       }
 
-      // نشانگر مقصد در حالت تپ/کلیک
       if (tapTarget) {
         const p = worldToIso(tapTarget.wx, tapTarget.wy);
         const rx = 7 + Math.sin(time * 6) * 1.5;
@@ -439,16 +548,62 @@
         ctx.stroke();
       }
 
-      // نشانگر بسیار محو هنگام نگه داشتن و کشیدن
-      if (pointer.down) {
+      if (mousePtr.down) {
         ctx.globalAlpha = 0.14;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.ellipse(pointer.sx, pointer.sy, 11, 5.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(mousePtr.sx, mousePtr.sy, 11, 5.5, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       ctx.globalAlpha = 1;
+    }
+
+    function drawJoystick() {
+      if (joy.alpha < 0.01) return;
+      const a = joy.alpha;
+
+      ctx.save();
+      // دایره بیرونی جوی‌استیک
+      ctx.beginPath();
+      ctx.arc(joy.baseX, joy.baseY, JOY_MAX_R, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.5 * a})`;
+      ctx.fill();
+      ctx.lineWidth = joy.running ? 2 : 1.5;
+      ctx.strokeStyle = `rgba(21, 21, 21, ${(joy.running ? 0.34 : 0.16) * a})`;
+      ctx.stroke();
+
+      // چهار خط ظریف جهت‌نما روی حلقه
+      ctx.strokeStyle = `rgba(21, 21, 21, ${0.18 * a})`;
+      ctx.lineWidth = 1.4;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        const ang = i * (Math.PI / 2);
+        const r1 = JOY_MAX_R - 7, r2 = JOY_MAX_R - 2;
+        ctx.beginPath();
+        ctx.moveTo(joy.baseX + Math.cos(ang) * r1, joy.baseY + Math.sin(ang) * r1);
+        ctx.lineTo(joy.baseX + Math.cos(ang) * r2, joy.baseY + Math.sin(ang) * r2);
+        ctx.stroke();
+      }
+
+      // خط راهنما از مرکز تا دسته
+      ctx.beginPath();
+      ctx.moveTo(joy.baseX, joy.baseY);
+      ctx.lineTo(joy.knobX, joy.knobY);
+      ctx.strokeStyle = `rgba(21, 21, 21, ${0.14 * a})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // دسته مرکزی (Thumb Knob)
+      ctx.beginPath();
+      ctx.arc(joy.knobX, joy.knobY, 20, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(21, 21, 21, ${(joy.running ? 0.22 : 0.1) * a})`;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `rgba(21, 21, 21, ${(joy.running ? 0.72 : 0.45) * a})`;
+      ctx.stroke();
+
+      ctx.restore();
     }
 
     function drawBush(bush, time, dt) {
@@ -592,8 +747,8 @@
       ctx.textAlign = 'center';
 
       if (isCoarsePointer || W < 560) {
-        ctx.fillText('برای حرکت لمس کنید یا انگشت را نگه دارید', W / 2, H - 44);
-        ctx.fillText('برای دویدن، انگشت را دورتر ببرید', W / 2, H - 24);
+        ctx.fillText('انگشت را هر جای صفحه بکشید (جوی‌استیک شناور)', W / 2, H - 44);
+        ctx.fillText('برای دویدن، انگشت را تا لبه دایره بکشید', W / 2, H - 24);
       } else {
         ctx.fillText('WASD، جهت‌ها یا کلیک و کشیدن موس برای حرکت  •  Shift برای دویدن', W / 2, H - 34);
       }
@@ -634,6 +789,7 @@
 
       drawDust();
       drawHint(dt);
+      drawJoystick();
 
       cleanTimer += dt;
       if (cleanTimer > 5 && chunks.size > 80) {
