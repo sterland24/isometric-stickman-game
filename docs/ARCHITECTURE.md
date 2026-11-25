@@ -88,7 +88,7 @@ Defined in `src/math/iso.js`:
 
 ## 4. Frame Execution Pipeline (`src/main.js`)
 
-0. **Canvas Sizing:** `canvas.clientWidth/clientHeight` define the CSS viewport (`W`, `H`). A `ResizeObserver` calls `resizeCanvas` after layout, rotation, or any CSS size change. The backing store uses `min(devicePixelRatio, 2)`, and a re-armed `matchMedia('(resolution: Ndppx)')` listener handles moving the window to a display with a different DPR. The loop skips rendering while `W` or `H` is zero.
+0. **Canvas Sizing:** `canvas.clientWidth/clientHeight` define the CSS viewport (`W`, `H`). A `ResizeObserver` calls `resizeCanvas` after layout, rotation, or any CSS size change. The backing store uses `min(devicePixelRatio, 2)`; a re-armed `matchMedia('(resolution: Ndppx)')` listener handles a DPR change, with a per-frame DPR comparison as a fallback for environments that update DPR without dispatching the media-query event. The loop skips rendering while `W` or `H` is zero.
 1. **Delta Time (`dt`):** `last` starts as `null` and is initialized from the first rAF timestamp. `dt` is clamped to `[0, 0.05s]`, so it can never be negative or cause tunneling after a hidden tab.
 2. **Update Phase:**
    - `updatePlayer(dt, input, cam, W, H)` resolves input priority (`Keyboard > Touch Joystick > Mouse Drag > Tap Target`), applies exponential acceleration/braking, advances gait `phase`, records the screen-space stride direction, and updates world-space `dust`.

@@ -13,6 +13,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let W = 0;
 let H = 0;
+let appliedDpr = 0;
 let dprQuery = null;
 
 function onDprChange() {
@@ -42,6 +43,7 @@ function resizeCanvas() {
   canvas.width = Math.round(W * dpr);
   canvas.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  appliedDpr = dpr;
   watchDpr(dpr);
 }
 
@@ -64,6 +66,9 @@ function loop(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   globalTime += dt;
+
+  // Fallback for environments that update DPR without firing the media query.
+  if (Math.min(window.devicePixelRatio || 1, 2) !== appliedDpr) resizeCanvas();
 
   if (W === 0 || H === 0) {
     requestAnimationFrame(loop);
