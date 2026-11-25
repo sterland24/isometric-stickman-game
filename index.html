@@ -2,8 +2,15 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>بازی استیکمن ایزومتریک</title>
+  <meta name="description" content="یک بازی مینیمال ایزومتریک با استیکمن؛ حرکت با WASD، کلیدهای جهت‌ها، موس یا لمس صفحه.">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="بازی استیکمن ایزومتریک">
+  <meta property="og:description" content="یک بازی مینیمال ایزومتریک با استیکمن؛ حرکت با WASD، کلیدهای جهت‌ها، موس یا لمس صفحه.">
+  <meta property="og:locale" content="fa_IR">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -11,7 +18,10 @@
     <span class="ai-badge-dot"></span>
     <span>Crafted with Artificial Intelligence</span>
   </div>
-  <canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas" role="img" aria-label="صحنه بازی استیکمن ایزومتریک"></canvas>
+  <noscript>
+    <p class="noscript-message">برای اجرای بازی باید JavaScript را در مرورگر خود فعال کنید.</p>
+  </noscript>
 
   <script type="module" src="src/main.js"></script>
 </body>

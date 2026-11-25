@@ -26,6 +26,18 @@ canvas {
   touch-action: none;
 }
 
+.noscript-message {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  font-family: system-ui, Tahoma, sans-serif;
+  font-size: 0.95rem;
+  color: #71717a;
+}
+
 .ai-badge {
   position: fixed;
   top: max(18px, calc(env(safe-area-inset-top, 0px) + 12px));
