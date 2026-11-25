@@ -27,7 +27,7 @@ export const dust = [];
 let stepSide = 0;
 
 function spawnDust(wx, wy, dir) {
-  if (dust.length > CONFIG.MAX_DUST_PARTICLES) dust.shift();
+  if (dust.length >= CONFIG.MAX_DUST_PARTICLES) dust.shift();
   const vxScreen = -dir * (4 + Math.random() * 8);
   dust.push({
     wx,

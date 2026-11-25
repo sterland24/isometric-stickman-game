@@ -200,8 +200,9 @@ export function createInputManager(canvas, getViewSize, cam, player) {
 
   canvas.addEventListener('pointerup', (e) => endPointer(e, true));
   canvas.addEventListener('pointercancel', (e) => endPointer(e, false));
+  canvas.addEventListener('lostpointercapture', (e) => endPointer(e, false));
 
-  window.addEventListener('blur', () => {
+  function resetInput() {
     for (const k in keys) keys[k] = false;
     joy.active = false;
     joy.id = null;
@@ -209,6 +210,11 @@ export function createInputManager(canvas, getViewSize, cam, player) {
     mousePtr.down = false;
     mousePtr.id = null;
     state.tapTarget = null;
+  }
+
+  window.addEventListener('blur', resetInput);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) resetInput();
   });
 
   return state;
