@@ -5,6 +5,23 @@ import { BUSH_TEMPLATES } from './bushData.js';
 const chunks = new Map();
 
 /**
+ * Non-separable 32-bit avalanche hash for chunk coordinates.
+ * Avoids the duplicate seeds produced by separable XOR hashes.
+ * @param {number} x - Chunk X
+ * @param {number} y - Chunk Y
+ * @returns {number} 32-bit signed seed for mulberry32
+ */
+export function chunkSeed(x, y) {
+  let h = Math.imul(x | 0, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h ^ (y | 0), 0xc2b2ae35);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x27d4eb2f);
+  h ^= h >>> 15;
+  return h | 0;
+}
+
+/**
  * Generates or retrieves the cached list of bushes for chunk (cx, cy).
  * @param {number} cx
  * @param {number} cy
@@ -15,7 +32,7 @@ export function getChunk(cx, cy) {
   let list = chunks.get(key);
   if (list) return list;
 
-  const rnd = mulberry32((cx * 73856093) ^ (cy * 19349663) ^ 0x9e3779b9);
+  const rnd = mulberry32(chunkSeed(cx, cy));
   list = [];
   const count = 3 + Math.floor(rnd() * 4);
 
