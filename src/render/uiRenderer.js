@@ -63,8 +63,10 @@ export function drawHint(ctx, player, W, H, dt) {
   if (player.vx || player.vy) hintAlpha = Math.max(0, hintAlpha - dt * 0.8);
   if (hintAlpha <= 0) return;
 
+  ctx.save();
   ctx.globalAlpha = hintAlpha * 0.45;
   ctx.fillStyle = CONFIG.INK_COLOR;
+  ctx.direction = 'rtl';
   const fontSize = W < 480 ? 12 : 14;
   ctx.font = `${fontSize}px system-ui, Tahoma, sans-serif`;
   ctx.textAlign = 'center';
@@ -73,9 +75,10 @@ export function drawHint(ctx, player, W, H, dt) {
     ctx.fillText('انگشت را هر جای صفحه بکشید (جوی‌استیک شناور)', W / 2, H - 44);
     ctx.fillText('برای دویدن، انگشت را تا لبه دایره بکشید', W / 2, H - 24);
   } else {
-    ctx.fillText('WASD، جهت‌ها یا کلیک و کشیدن موس برای حرکت  •  Shift برای دویدن', W / 2, H - 34);
+    ctx.fillText('WASD یا کلیدهای جهت‌ها برای حرکت  •  Shift برای دویدن', W / 2, H - 44);
+    ctx.fillText('کشیدن موس دورتر از شخصیت = دویدن', W / 2, H - 24);
   }
-  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 /**
