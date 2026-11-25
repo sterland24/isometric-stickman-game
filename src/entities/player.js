@@ -55,7 +55,7 @@ export function updatePlayer(dt, input, cam, W, H) {
   if (keys.up) { dx -= 1; dy -= 1; }
   if (keys.down) { dx += 1; dy += 1; }
   if (keys.left) { dx -= 1; dy += 1; }
-  if (keys.right) { dx += 1; dy += 1; }
+  if (keys.right) { dx += 1; dy -= 1; }
 
   const hasKeyInput = dx !== 0 || dy !== 0;
 
