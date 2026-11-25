@@ -61,20 +61,32 @@ export function getChunk(cx, cy) {
 }
 
 /**
- * Evicts distant chunks from memory when the cache grows beyond CHUNK_MAX_CACHE.
+ * Evicts chunks outside the keep radius around the player.
+ * The keep radius grows with the viewport so no visible chunk is evicted,
+ * which keeps the cache bounded without resetting visible bush state.
  * @param {number} playerX
  * @param {number} playerY
+ * @param {number} [visibleRadius] - Chebyshev radius (in chunks) that is visible
  */
-export function pruneChunks(playerX, playerY) {
-  if (chunks.size <= CONFIG.CHUNK_MAX_CACHE) return;
+export function pruneChunks(playerX, playerY, visibleRadius = 0) {
+  const radius =
+    Math.max(CONFIG.CHUNK_KEEP_RADIUS, visibleRadius) + CONFIG.CHUNK_CACHE_MARGIN;
 
   const pcx = Math.floor(playerX / CONFIG.CHUNK_SIZE);
   const pcy = Math.floor(playerY / CONFIG.CHUNK_SIZE);
 
   for (const key of chunks.keys()) {
     const [kx, ky] = key.split(',').map(Number);
-    if (Math.abs(kx - pcx) > CONFIG.CHUNK_KEEP_RADIUS || Math.abs(ky - pcy) > CONFIG.CHUNK_KEEP_RADIUS) {
+    if (Math.abs(kx - pcx) > radius || Math.abs(ky - pcy) > radius) {
       chunks.delete(key);
     }
   }
+}
+
+/**
+ * Number of chunks currently held in memory (diagnostics and tests).
+ * @returns {number}
+ */
+export function chunkCacheSize() {
+  return chunks.size;
 }

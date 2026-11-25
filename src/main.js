@@ -57,6 +57,16 @@ function loop(now) {
   const cy0 = Math.floor(bounds.minY / CONFIG.CHUNK_SIZE);
   const cy1 = Math.floor(bounds.maxY / CONFIG.CHUNK_SIZE);
 
+  // Largest chunk distance from the player that can be on screen this frame.
+  const pcx = Math.floor(player.x / CONFIG.CHUNK_SIZE);
+  const pcy = Math.floor(player.y / CONFIG.CHUNK_SIZE);
+  const visibleRadius = Math.max(
+    Math.abs(cx0 - pcx),
+    Math.abs(cx1 - pcx),
+    Math.abs(cy0 - pcy),
+    Math.abs(cy1 - pcy)
+  );
+
   for (let cx = cx0; cx <= cx1; cx++) {
     for (let cy = cy0; cy <= cy1; cy++) {
       for (const bush of getChunk(cx, cy)) {
@@ -84,7 +94,7 @@ function loop(now) {
   cleanTimer += dt;
   if (cleanTimer > CONFIG.CHUNK_PRUNE_INTERVAL) {
     cleanTimer = 0;
-    pruneChunks(player.x, player.y);
+    pruneChunks(player.x, player.y, visibleRadius);
   }
 
   requestAnimationFrame(loop);

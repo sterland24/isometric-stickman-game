@@ -17,8 +17,10 @@ export const CONFIG = {
   // Infinite world chunk settings
   CHUNK_SIZE: 360,
   CHUNK_PRUNE_INTERVAL: 5,
-  CHUNK_MAX_CACHE: 80,
+  // Minimum Chebyshev radius (in chunks) kept around the player.
+  // The effective radius grows with the viewport; see pruneChunks.
   CHUNK_KEEP_RADIUS: 6,
+  CHUNK_CACHE_MARGIN: 2,
   SPAWN_CLEAR_RADIUS: 70,
 
   // Floor grid
