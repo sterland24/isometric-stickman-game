@@ -25,10 +25,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Stage runtime files
+        run: |
+          mkdir -p dist
+          cp index.html favicon.svg dist/
+          cp -r src styles dist/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'dist'
 
   deploy:
     environment:
