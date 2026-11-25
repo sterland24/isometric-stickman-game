@@ -1,0 +1,11 @@
+{
+  "name": "isometric-stickman-game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A zero-build isometric stickman experiment on HTML5 Canvas.",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "license": "MIT"
+}
