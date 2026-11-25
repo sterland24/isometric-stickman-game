@@ -11,6 +11,9 @@ export const player = {
   vy: 0,
   phase: 0,
   face: 1,
+  // Last non-zero screen-space travel direction, used to orient the gait.
+  strideDirX: 1,
+  strideDirY: 0,
   headRadius: CONFIG.PLAYER_HEAD_RADIUS,
   bodyHeight: CONFIG.PLAYER_BODY_HEIGHT,
   legLength: CONFIG.PLAYER_LEG_LENGTH,
@@ -138,7 +141,16 @@ export function updatePlayer(dt, input, cam, W, H) {
   if (sp > 4) player.phase += sp * dt * 0.065;
 
   const sxv = player.vx - player.vy;
+  const syv = (player.vx + player.vy) / 2;
   if (Math.abs(sxv) > 8) player.face = sxv > 0 ? 1 : -1;
+
+  // Remember the last non-zero screen-space direction so the idle pose
+  // does not snap back to a default stride orientation.
+  const svLen = Math.hypot(sxv, syv);
+  if (svLen > 1e-4) {
+    player.strideDirX = sxv / svLen;
+    player.strideDirY = syv / svLen;
+  }
 
   // Spawn footstep dust while running
   const side = Math.floor(player.phase / Math.PI);

@@ -20,6 +20,8 @@ export function drawStickman(ctx, player, cam, W, H, time) {
   const run = Math.min(1, Math.max(0, (sp - CONFIG.WALK_SPEED) / (CONFIG.RUN_SPEED - CONFIG.WALK_SPEED)));
   const f = player.face;
   const ph = player.phase;
+  const dirX = player.strideDirX ?? 1;
+  const dirY = player.strideDirY ?? 0;
 
   const bob = Math.abs(Math.sin(ph)) * (2.2 + run * 1.5) * m + Math.sin(time * 2.2) * 0.6 * (1 - m);
   const lean = f * m * (2 + run * 3);
@@ -46,8 +48,9 @@ export function drawStickman(ctx, player, cam, W, H, time) {
   for (const side of [1, -1]) {
     const sw = s * side;
     const lift = Math.max(0, c * side) * (4 + run * 3) * m;
-    const fx = px + side * 3 + sw * swing;
-    const fy = py - lift;
+    const stride = sw * swing;
+    const fx = px + side * 3 + stride * dirX;
+    const fy = py - lift + stride * dirY;
     const kx = (px + fx) / 2 + f * 3 * m;
     const ky = (hipY + fy) / 2;
     ctx.beginPath();
@@ -62,11 +65,18 @@ export function drawStickman(ctx, player, cam, W, H, time) {
   const sx0 = px + lean * 0.85;
   for (const side of [1, -1]) {
     const sw = -s * side;
-    const hx = sx0 + side * 3 + sw * swing * 0.9;
-    const hy = shoulderY + 17 - Math.abs(sw) * 1.5 * m;
+    const handStride = sw * swing * 0.9;
+    const ctrlStride = sw * swing * 0.35;
+    const hx = sx0 + side * 3 + handStride * dirX;
+    const hy = shoulderY + 17 - Math.abs(sw) * 1.5 * m + handStride * dirY;
     ctx.beginPath();
     ctx.moveTo(sx0, shoulderY);
-    ctx.quadraticCurveTo(sx0 + side * 4 + sw * swing * 0.35, shoulderY + 9, hx, hy);
+    ctx.quadraticCurveTo(
+      sx0 + side * 4 + ctrlStride * dirX,
+      shoulderY + 9 + ctrlStride * dirY,
+      hx,
+      hy
+    );
     ctx.stroke();
   }
 
