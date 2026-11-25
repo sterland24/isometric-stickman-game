@@ -30,11 +30,12 @@ resizeCanvas();
 const input = createInputManager(canvas, () => ({ W, H }), cam, player);
 
 let globalTime = 0;
-let last = performance.now();
+let last = null;
 let cleanTimer = 0;
 
 function loop(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  if (last === null) last = now;
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   globalTime += dt;
 
