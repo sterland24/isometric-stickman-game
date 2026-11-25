@@ -27,6 +27,9 @@ export const CONFIG = {
   FLOOR_STEP: 60,
   FLOOR_MIN_RADIUS: 760,
 
+  // Off-screen culling margin for a bush (max drawn extent in px)
+  BUSH_CULL_MARGIN: 48,
+
   // Touch virtual joystick
   JOY_MAX_R: 54,
   JOY_DEADZONE: 7,

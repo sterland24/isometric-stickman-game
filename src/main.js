@@ -99,9 +99,16 @@ function loop(now) {
     Math.abs(cy1 - pcy)
   );
 
+  const cxOff = cam.x;
+  const cyOff = cam.y;
+  const cull = CONFIG.BUSH_CULL_MARGIN;
   for (let cx = cx0; cx <= cx1; cx++) {
     for (let cy = cy0; cy <= cy1; cy++) {
       for (const bush of getChunk(cx, cy)) {
+        // Inline worldToIso to avoid an allocation per bush per frame.
+        const sx = W / 2 + (bush.x - cxOff) - (bush.y - cyOff);
+        const sy = H / 2 + ((bush.x - cxOff) + (bush.y - cyOff)) * 0.5;
+        if (sx < -cull || sx > W + cull || sy < -cull || sy > H + cull) continue;
         renderList.push({ bush, depth: bush.x + bush.y });
       }
     }
