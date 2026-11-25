@@ -13,18 +13,44 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let W = 0;
 let H = 0;
+let dprQuery = null;
+
+function onDprChange() {
+  resizeCanvas();
+}
+
+/**
+ * Re-arms a media query for the current devicePixelRatio so moving the
+ * window to a display with a different DPR resizes the backing store.
+ * @param {number} dpr
+ */
+function watchDpr(dpr) {
+  if (dprQuery) dprQuery.removeEventListener('change', onDprChange);
+  dprQuery = window.matchMedia(`(resolution: ${dpr}dppx)`);
+  dprQuery.addEventListener('change', onDprChange);
+}
 
 function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth;
-  H = window.innerHeight;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
+  const cw = canvas.clientWidth;
+  const ch = canvas.clientHeight;
+  if (cw > 0 && ch > 0) {
+    W = cw;
+    H = ch;
+  }
+  if (W === 0 || H === 0) return;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  watchDpr(dpr);
 }
 
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+if ('ResizeObserver' in window) {
+  new ResizeObserver(resizeCanvas).observe(canvas);
+} else {
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('orientationchange', resizeCanvas);
+}
 resizeCanvas();
 
 const input = createInputManager(canvas, () => ({ W, H }), cam, player);
@@ -38,6 +64,11 @@ function loop(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   globalTime += dt;
+
+  if (W === 0 || H === 0) {
+    requestAnimationFrame(loop);
+    return;
+  }
 
   // Update simulation
   updatePlayer(dt, input, cam, W, H);
