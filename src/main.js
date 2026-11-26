@@ -21,18 +21,20 @@ function onDprChange() {
 }
 
 /**
- * Re-arms a media query for the current devicePixelRatio so moving the
+ * Re-arms a media query for the current raw devicePixelRatio so moving the
  * window to a display with a different DPR resizes the backing store.
- * @param {number} dpr
+ * The raw value is used here because the backing store itself is capped at 2.
+ * @param {number} rawDpr
  */
-function watchDpr(dpr) {
+function watchDpr(rawDpr) {
   if (dprQuery) dprQuery.removeEventListener('change', onDprChange);
-  dprQuery = window.matchMedia(`(resolution: ${dpr}dppx)`);
+  dprQuery = window.matchMedia(`(resolution: ${rawDpr}dppx)`);
   dprQuery.addEventListener('change', onDprChange);
 }
 
 function resizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rawDpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(rawDpr, 2);
   const cw = canvas.clientWidth;
   const ch = canvas.clientHeight;
   if (cw > 0 && ch > 0) {
@@ -44,7 +46,7 @@ function resizeCanvas() {
   canvas.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   appliedDpr = dpr;
-  watchDpr(dpr);
+  watchDpr(rawDpr);
 }
 
 if ('ResizeObserver' in window) {
