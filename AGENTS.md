@@ -25,11 +25,11 @@
 | Player Render | `src/render/stickmanRenderer.js` | `drawStickman` (shadow, legs, arms, torso, head, eye; stride follows `strideDirX/Y`) |
 | HUD & FX Render | `src/render/uiRenderer.js` | `drawPointerEffects`, `drawDust`, `drawHint` (RTL), `drawJoystick` |
 | Styles & Shell | `styles/main.css`, `index.html` | Full-viewport canvas, `.ai-badge`, RTL Persian shell, favicon/meta, mobile safe-area & `touch-action: none` |
-| Tests | `tests/*.test.js` | `node --test tests/`: controls, iso round-trip/bounds, chunk determinism/collisions, viewport-aware pruning |
+| Tests | `tests/*.test.js` | `npm test`: controls, iso round-trip/bounds, chunk determinism/collisions, viewport-aware pruning |
 
 ## Verification
 - Syntax: `node --check src/main.js` (repeat for changed modules) or check all `src/**/*.js`.
-- Tests: `node --test tests/` (all tests must pass).
+- Tests: `npm test` (Node.js 20+; all tests must pass).
 - Runtime: serve the repo root with `python -m http.server 8080`; there are no third-party requests and no build output.
 
 ## Coordinate Spaces (Critical Invariant)

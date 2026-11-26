@@ -133,11 +133,9 @@ Defined in `src/math/iso.js`:
 
 ## 6. Testing
 
-The suite uses the built-in Node runner and imports simulation modules directly (no DOM, no dependencies):
+The suite uses the built-in Node runner (Node.js 20+) and imports simulation modules directly (no DOM, no dependencies):
 
 ```bash
-node --test tests/
-# or
 npm test
 ```
 

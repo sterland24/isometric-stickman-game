@@ -36,11 +36,9 @@ python -m http.server 8080
 Then open `http://localhost:8080` (or the port shown by `serve`) in your browser. Deployment to GitHub Pages works automatically via `.github/workflows/deploy.yml`, which publishes only `index.html`, `favicon.svg`, `src/`, and `styles/` from a `dist/` staging folder.
 
 ## Run Tests
-The tests use Node's built-in runner (Node 20+), with no dependencies or install step:
+The tests use Node's built-in runner with no dependencies or install step. **Node.js 20 or newer is required.**
 
 ```bash
-node --test tests/
-# or
 npm test
 ```
 
