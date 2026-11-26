@@ -81,15 +81,33 @@ export function createInputManager(canvas, getViewSize, cam, player) {
     if (ripples.length > 6) ripples.shift();
   }
 
+  // Physical keys currently held. An action stays active until the last key
+  // bound to it is released (e.g. W + ArrowUp, or both Shift keys).
+  const heldCodes = new Set();
+
+  function syncAction(action) {
+    let held = false;
+    for (const code of heldCodes) {
+      if (KEY_MAP[code] === action) { held = true; break; }
+    }
+    keys[action] = held;
+  }
+
   window.addEventListener('keydown', (e) => {
-    if (KEY_MAP[e.code]) {
-      keys[KEY_MAP[e.code]] = true;
+    const action = KEY_MAP[e.code];
+    if (action) {
+      heldCodes.add(e.code);
+      keys[action] = true;
       e.preventDefault();
     }
   });
 
   window.addEventListener('keyup', (e) => {
-    if (KEY_MAP[e.code]) keys[KEY_MAP[e.code]] = false;
+    const action = KEY_MAP[e.code];
+    if (action) {
+      heldCodes.delete(e.code);
+      syncAction(action);
+    }
   });
 
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -203,6 +221,7 @@ export function createInputManager(canvas, getViewSize, cam, player) {
   canvas.addEventListener('lostpointercapture', (e) => endPointer(e, false));
 
   function resetInput() {
+    heldCodes.clear();
     for (const k in keys) keys[k] = false;
     joy.active = false;
     joy.id = null;
