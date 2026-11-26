@@ -14,6 +14,9 @@ export const CONFIG = {
   // Camera smoothing factor
   CAMERA_SMOOTHING: 4.5,
 
+  // Screen-space gait direction smoothing (1/sec)
+  GAIT_DIR_SMOOTHING: 14,
+
   // Infinite world chunk settings
   CHUNK_SIZE: 360,
   CHUNK_PRUNE_INTERVAL: 5,

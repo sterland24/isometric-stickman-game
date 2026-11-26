@@ -108,7 +108,7 @@ test('gait direction follows screen travel and survives going idle', () => {
   resetPlayer();
   const input = makeInput();
   input.keys.up = true;
-  for (let i = 0; i < 60; i++) updatePlayer(DT, input, CAM, W, H);
+  for (let i = 0; i < 120; i++) updatePlayer(DT, input, CAM, W, H);
   assert.ok(Math.abs(player.strideDirX) < 1e-9);
   assert.ok(Math.abs(player.strideDirY + 1) < 1e-9);
 
@@ -116,5 +116,27 @@ test('gait direction follows screen travel and survives going idle', () => {
   for (let i = 0; i < 120; i++) updatePlayer(DT, input, CAM, W, H);
   assert.ok(Math.abs(player.strideDirX) < 1e-9);
   assert.ok(Math.abs(player.strideDirY + 1) < 1e-9);
+  assert.ok(Number.isFinite(player.strideDirX) && Number.isFinite(player.strideDirY));
+});
+
+test('a 180-degree reversal turns the gait gradually', () => {
+  resetPlayer();
+  // Start facing screen-right, then move screen-left with an immediate left velocity.
+  player.strideDirX = 1;
+  player.strideDirY = 0;
+  player.vx = -100;
+  player.vy = 100;
+
+  const input = makeInput();
+  input.keys.left = true;
+  updatePlayer(DT, input, CAM, W, H);
+
+  assert.ok(Math.abs(Math.hypot(player.strideDirX, player.strideDirY) - 1) < 1e-9);
+  assert.ok(player.strideDirX < 0.999, 'direction should start changing in the first frame');
+  assert.ok(player.strideDirX > -0.999, `direction jumped to ${player.strideDirX} in one frame`);
+
+  for (let i = 0; i < 180; i++) updatePlayer(DT, input, CAM, W, H);
+  assert.ok(player.strideDirX < -0.999);
+  assert.ok(Math.abs(player.strideDirY) < 0.01);
   assert.ok(Number.isFinite(player.strideDirX) && Number.isFinite(player.strideDirY));
 });

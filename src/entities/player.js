@@ -144,12 +144,26 @@ export function updatePlayer(dt, input, cam, W, H) {
   const syv = (player.vx + player.vy) / 2;
   if (Math.abs(sxv) > 8) player.face = sxv > 0 ? 1 : -1;
 
-  // Remember the last non-zero screen-space direction so the idle pose
-  // does not snap back to a default stride orientation.
+  // Remember the last screen-space direction and ease toward the new one so
+  // sharp turns do not snap the legs. Angular interpolation keeps a 180°
+  // reversal gradual instead of flipping through a zero-length vector.
   const svLen = Math.hypot(sxv, syv);
   if (svLen > 1e-4) {
-    player.strideDirX = sxv / svLen;
-    player.strideDirY = syv / svLen;
+    const targetX = sxv / svLen;
+    const targetY = syv / svLen;
+    const curLen = Math.hypot(player.strideDirX, player.strideDirY);
+    if (curLen < 1e-6) {
+      player.strideDirX = targetX;
+      player.strideDirY = targetY;
+    } else {
+      const from = Math.atan2(player.strideDirY / curLen, player.strideDirX / curLen);
+      const to = Math.atan2(targetY, targetX);
+      const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+      const k = 1 - Math.exp(-dt * CONFIG.GAIT_DIR_SMOOTHING);
+      const angle = from + delta * k;
+      player.strideDirX = Math.cos(angle);
+      player.strideDirY = Math.sin(angle);
+    }
   }
 
   // Spawn footstep dust while running
