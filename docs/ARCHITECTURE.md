@@ -147,7 +147,9 @@ Coverage:
 
 ## 7. Deployment
 
-`.github/workflows/deploy.yml` keeps the two-job build/deploy structure. The build job runs:
+The workflow graph is `test → build → deploy`. The `test` job runs on every push to `main` and on `workflow_dispatch`, syntax-checks every `src/**/*.js` file, and runs `npm test` on Node 22. The `build` job declares `needs: test`, so a failing test blocks deployment.
+
+The build job stages only runtime files:
 
 ```bash
 mkdir -p dist

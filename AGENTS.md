@@ -7,6 +7,7 @@
 - The GitHub Pages workflow stages only runtime files (`index.html`, `favicon.svg`, `src/`, `styles/`) into `dist/` and deploys that folder (`.github/workflows/deploy.yml`). **Do not introduce a bundler or npm build step** unless explicitly requested.
 - Local testing requires an HTTP server (ES modules fail on `file://`).
 - Tests use the built-in `node:test` runner (Node 20+) with **no npm dependencies**. `package.json` only sets `"type": "module"`.
+- CI runs a syntax check and `npm test` before the Pages build (`test` → `build` → `deploy`); a failing test blocks deployment.
 
 ## File Map (Read Only What You Need)
 
